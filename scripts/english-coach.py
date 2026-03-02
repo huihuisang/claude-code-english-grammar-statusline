@@ -7,7 +7,16 @@ Writes correction tip to ~/.claude/english-tip-latest.txt
 
 import json
 import os
+import random
 import sys
+
+LGTM_MESSAGES = [
+    "✨ Sounds native!",
+    "🎯 Perfect English!",
+    "👏 Nailed it!",
+    "🌟 Natural and clear!",
+    "💪 Your English rocks!",
+]
 
 
 def load_env():
@@ -23,17 +32,10 @@ def load_env():
 
 
 def is_mostly_english(text):
-    """Return True only if text contains no CJK characters and is >= 80% ASCII alpha"""
-    # Reject immediately if any CJK character is present
-    has_cjk = any(
-        '\u4e00' <= c <= '\u9fff' or  # CJK Unified Ideographs
-        '\u3400' <= c <= '\u4dbf' or  # CJK Extension A
-        '\u3000' <= c <= '\u303f'     # CJK Symbols and Punctuation
-        for c in text
-    )
-    if has_cjk:
-        return False
-
+    """Return True if English letters make up >= 80% of all alphabetic characters.
+    Allows mixed Chinese-English (e.g. 'Can you help me 修复 this?') to pass through,
+    while rejecting messages that are predominantly Chinese.
+    """
     english_chars = sum(1 for c in text if c.isalpha() and ord(c) < 128)
     total_alpha   = sum(1 for c in text if c.isalpha())
     if total_alpha == 0:
@@ -101,7 +103,10 @@ def main():
 
     try:
         result = check_grammar(prompt_text, api_key)
-        write_tip(result)
+        if result == "LGTM":
+            write_tip(random.choice(LGTM_MESSAGES))
+        else:
+            write_tip(result)
     except Exception:
         pass
 

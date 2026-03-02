@@ -20,7 +20,7 @@ TIP_FILE="$HOME/.claude/english-tip-latest.txt"
 
 content=$(cat "$TIP_FILE")
 
-# Only display if there's an actual correction (not LGTM, not empty)
-if [ -n "$content" ] && [ "$content" != "LGTM" ]; then
+# Display tip if present (LGTM is already replaced with an encouraging message in Python)
+if [ -n "$content" ]; then
     echo "$PREFIX  $content"
 fi
