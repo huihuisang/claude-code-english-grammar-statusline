@@ -8,6 +8,7 @@ Writes correction tip to ~/.claude/english-tip-latest.txt
 import json
 import os
 import random
+import re
 import sys
 
 LGTM_MESSAGES = [
@@ -31,13 +32,25 @@ def load_env():
                     os.environ[key.strip()] = value.strip()
 
 
+def strip_non_prose(text):
+    """Remove file paths, URLs, and code-like tokens so they don't skew language detection."""
+    # Remove file paths like /Users/tree/Documents/... or ~/foo/bar
+    text = re.sub(r'[~/][\w./\-@]+', ' ', text)
+    # Remove URLs
+    text = re.sub(r'https?://\S+', ' ', text)
+    # Remove inline code blocks
+    text = re.sub(r'`[^`]+`', ' ', text)
+    return text
+
+
 def is_mostly_english(text):
     """Return True if English letters make up >= 80% of all alphabetic characters.
-    Allows mixed Chinese-English (e.g. 'Can you help me 修复 this?') to pass through,
-    while rejecting messages that are predominantly Chinese.
+    Strips file paths, URLs, and code tokens before checking so they don't
+    inflate the English ratio on Chinese-dominant messages.
     """
-    english_chars = sum(1 for c in text if c.isalpha() and ord(c) < 128)
-    total_alpha   = sum(1 for c in text if c.isalpha())
+    cleaned = strip_non_prose(text)
+    english_chars = sum(1 for c in cleaned if c.isalpha() and ord(c) < 128)
+    total_alpha   = sum(1 for c in cleaned if c.isalpha())
     if total_alpha == 0:
         return False
     return (english_chars / total_alpha) >= 0.8
